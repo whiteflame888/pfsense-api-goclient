@@ -269,6 +269,7 @@ func (c *Client) generateToken(ctx context.Context) (string, error) {
 }
 
 func (c *Client) get(ctx context.Context, endpoint string, queryMap map[string]string) ([]byte, error) {
+	c.l.Info("Client.get()", zap.String("endpoint", endpoint), zap.Any("queryMap", queryMap))
 	res, err := c.do(ctx, http.MethodGet, endpoint, queryMap, nil)
 	if err != nil {
 		return nil, err
@@ -277,11 +278,11 @@ func (c *Client) get(ctx context.Context, endpoint string, queryMap map[string]s
 		var err error
 		_, err = io.Copy(io.Discard, res.Body)
 		if err != nil {
-			c.l.Error("error with io.Copy", zap.Error(err))
+			c.l.Error("Client.get() io.Copy", zap.Error(err))
 		}
 		err = res.Body.Close()
 		if err != nil {
-			c.l.Error("error closing body", zap.Error(err))
+			c.l.Error("Client.get() res.Body.Close()", zap.Error(err))
 		}
 	}()
 
@@ -293,8 +294,8 @@ func (c *Client) get(ctx context.Context, endpoint string, queryMap map[string]s
 	if res.StatusCode < 200 || res.StatusCode > 299 {
 		resp := new(apiResponse)
 		if err = json.Unmarshal(body, resp); err != nil {
-			c.l.Error("error unmarshalling body", zap.String("body", string(body)))
-			return nil, fmt.Errorf("non 2xx response code received: %d", res.StatusCode)
+			c.l.Error("Client.get() json.Unmarshal()", zap.String("body", string(body)), zap.Int("statusCode", res.StatusCode))
+			return nil, fmt.Errorf("bad status code received: %d", res.StatusCode)
 		}
 		return nil, fmt.Errorf("%s, response code %d", resp.Message, res.StatusCode)
 	}
@@ -309,7 +310,10 @@ func (c *Client) post(ctx context.Context, endpoint string, queryMap map[string]
 	}
 	defer func() {
 		// TODO check errors
-		_, _ = io.Copy(io.Discard, res.Body)
+		_, err = io.Copy(io.Discard, res.Body)
+		if err !- nil {
+			c.l.Error("Client.get() io.Copy", zap.Error(err))
+		}
 		_ = res.Body.Close()
 	}()
 
