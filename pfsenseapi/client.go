@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 	"io"
 	"net/http"
@@ -33,6 +34,7 @@ var (
 type Client struct {
 	client *http.Client
 	Cfg    Config
+	l *zap.Logger
 
 	System    *SystemService
 	Token     *TokenService
@@ -95,6 +97,11 @@ func NewClient(config Config) *Client {
 	newClient.Firewall = &FirewallService{client: newClient}
 	newClient.User = &UserService{client: newClient}
 	return newClient
+}
+
+func (c*Client) WithLogger(l *zap.Logger) *Client {
+	c.l = l
+	return c
 }
 
 // NewClientWithNoAuth constructs a new Client using defaults for everything
@@ -180,6 +187,7 @@ func (c *Client) do(ctx context.Context, method, endpoint string, queryMap map[s
 
 func (c *Client) doRequest(ctx context.Context, method, endpoint string, queryMap map[string]string, body []byte) (*http.Response, error) {
 	baseURL := fmt.Sprintf("%s/%s", c.Cfg.Host, endpoint)
+	// TODO logging
 	req, err := http.NewRequestWithContext(ctx, method, baseURL, bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
@@ -265,6 +273,7 @@ func (c *Client) get(ctx context.Context, endpoint string, queryMap map[string]s
 		return nil, err
 	}
 	defer func() {
+		// TODO check errors
 		_, _ = io.Copy(io.Discard, res.Body)
 		_ = res.Body.Close()
 	}()
@@ -291,6 +300,7 @@ func (c *Client) post(ctx context.Context, endpoint string, queryMap map[string]
 		return nil, err
 	}
 	defer func() {
+		// TODO check errors
 		_, _ = io.Copy(io.Discard, res.Body)
 		_ = res.Body.Close()
 	}()
@@ -317,6 +327,7 @@ func (c *Client) put(ctx context.Context, endpoint string, queryMap map[string]s
 		return nil, err
 	}
 	defer func() {
+		// TODO check errors
 		_, _ = io.Copy(io.Discard, res.Body)
 		_ = res.Body.Close()
 	}()
@@ -343,6 +354,7 @@ func (c *Client) delete(ctx context.Context, endpoint string, queryMap map[strin
 		return nil, err
 	}
 	defer func() {
+		// TODO check errors
 		_, _ = io.Copy(io.Discard, res.Body)
 		_ = res.Body.Close()
 	}()
