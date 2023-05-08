@@ -34,7 +34,7 @@ var (
 type Client struct {
 	client *http.Client
 	Cfg    Config
-	l *zap.Logger
+	l      *zap.Logger
 
 	System    *SystemService
 	Token     *TokenService
@@ -99,7 +99,7 @@ func NewClient(config Config) *Client {
 	return newClient
 }
 
-func (c*Client) WithLogger(l *zap.Logger) *Client {
+func (c *Client) WithLogger(l *zap.Logger) *Client {
 	c.l = l
 	return c
 }

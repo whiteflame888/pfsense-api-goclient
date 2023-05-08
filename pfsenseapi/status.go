@@ -3,6 +3,8 @@ package pfsenseapi
 import (
 	"context"
 	"encoding/json"
+
+	"go.uber.org/zap"
 )
 
 const (
@@ -10,7 +12,7 @@ const (
 	interfaceStatusEndpoint   = "api/v1/status/interface"
 	gatewayStatusEndpoint     = "api/v1/status/gateway"
 	firewallLogStatusEndpoint = "api/v1/status/log/firewall"
-	systemLogStatusEndpoint   = "api/v1/status/log/system"
+	systemLogStatusEndpoint   = "api/v1/status/log/status"
 	dhcpLogStatusEndpoint     = "api/v1/status/log/dhcp"
 )
 
@@ -146,6 +148,7 @@ func (s StatusService) ListGatewayStatus(ctx context.Context) ([]*GatewayStatus,
 
 // genericLogRequest returns the a generic Log response
 func (s StatusService) genericLogRequest(ctx context.Context, endpoint string) ([]string, error) {
+	s.client.l.Info("about to call client.get", zap.String("endpoint", endpoint))
 	response, err := s.client.get(ctx, endpoint, nil)
 	if err != nil {
 		return nil, err
@@ -165,6 +168,7 @@ func (s StatusService) DHCPLog(ctx context.Context) ([]string, error) {
 
 // FirewallLog returns the firewall log
 func (s StatusService) FirewallLog(ctx context.Context) ([]string, error) {
+	s.client.l.Info("FirewallLog about to call genericLogRequest with endpoint", zap.String("endpoint", firewallLogStatusEndpoint))
 	return s.genericLogRequest(ctx, firewallLogStatusEndpoint)
 }
 
