@@ -7,11 +7,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"go.uber.org/zap"
-	"golang.org/x/exp/slices"
 	"io"
 	"net/http"
 	"time"
+
+	"go.uber.org/zap"
+	"golang.org/x/exp/slices"
 )
 
 var (
@@ -273,9 +274,15 @@ func (c *Client) get(ctx context.Context, endpoint string, queryMap map[string]s
 		return nil, err
 	}
 	defer func() {
-		// TODO check errors
-		_, _ = io.Copy(io.Discard, res.Body)
-		_ = res.Body.Close()
+		var err error
+		_, err = io.Copy(io.Discard, res.Body)
+		if err != nil {
+			c.l.Error("error with io.Copy", zap.Error(err))
+		}
+		err = res.Body.Close()
+		if err != nil {
+			c.l.Error("error closing body", zap.Error(err))
+		}
 	}()
 
 	body, err := io.ReadAll(res.Body)
@@ -286,6 +293,7 @@ func (c *Client) get(ctx context.Context, endpoint string, queryMap map[string]s
 	if res.StatusCode < 200 || res.StatusCode > 299 {
 		resp := new(apiResponse)
 		if err = json.Unmarshal(body, resp); err != nil {
+			c.l.Error("error unmarshalling body", zap.String("body", string(body)))
 			return nil, fmt.Errorf("non 2xx response code received: %d", res.StatusCode)
 		}
 		return nil, fmt.Errorf("%s, response code %d", resp.Message, res.StatusCode)
@@ -313,6 +321,7 @@ func (c *Client) post(ctx context.Context, endpoint string, queryMap map[string]
 	if res.StatusCode < 200 || res.StatusCode > 299 {
 		resp := new(apiResponse)
 		if err = json.Unmarshal(respbody, resp); err != nil {
+			c.l.Error("error unmarshalling body", zap.String("body", string(body)))
 			return nil, fmt.Errorf("non 2xx response code received: %d", res.StatusCode)
 		}
 		return nil, fmt.Errorf("%s, response code %d", resp.Message, res.StatusCode)
@@ -327,9 +336,14 @@ func (c *Client) put(ctx context.Context, endpoint string, queryMap map[string]s
 		return nil, err
 	}
 	defer func() {
-		// TODO check errors
-		_, _ = io.Copy(io.Discard, res.Body)
-		_ = res.Body.Close()
+		_, err = io.Copy(io.Discard, res.Body)
+		if err != nil {
+			c.l.Error("error with io.Copy", zap.Error(err))
+		}
+		err = res.Body.Close()
+		if err != nil {
+			c.l.Error("error closing body", zap.Error(err))
+		}
 	}()
 
 	respbody, err := io.ReadAll(res.Body)
@@ -340,6 +354,7 @@ func (c *Client) put(ctx context.Context, endpoint string, queryMap map[string]s
 	if res.StatusCode < 200 || res.StatusCode > 299 {
 		resp := new(apiResponse)
 		if err = json.Unmarshal(respbody, resp); err != nil {
+			c.l.Error("error unmarshalling body", zap.String("body", string(body)))
 			return nil, fmt.Errorf("non 2xx response code received: %d", res.StatusCode)
 		}
 		return nil, fmt.Errorf("%s, response code %d", resp.Message, res.StatusCode)
@@ -354,9 +369,15 @@ func (c *Client) delete(ctx context.Context, endpoint string, queryMap map[strin
 		return nil, err
 	}
 	defer func() {
-		// TODO check errors
-		_, _ = io.Copy(io.Discard, res.Body)
-		_ = res.Body.Close()
+		var err error
+		_, err = io.Copy(io.Discard, res.Body)
+		if err != nil {
+			c.l.Error("error running io.Copy", zap.Error(err))
+		}
+		err = res.Body.Close()
+		if err != nil {
+			c.l.Error("error closing response body", zap.Error(err))
+		}
 	}()
 
 	body, err := io.ReadAll(res.Body)
@@ -367,6 +388,7 @@ func (c *Client) delete(ctx context.Context, endpoint string, queryMap map[strin
 	if res.StatusCode < 200 || res.StatusCode > 299 {
 		resp := new(apiResponse)
 		if err = json.Unmarshal(body, resp); err != nil {
+			c.l.Error("error unmarshalling body", zap.String("body", string(body)))
 			return nil, fmt.Errorf("non 2xx response code received: %d", res.StatusCode)
 		}
 		return nil, fmt.Errorf("%s, response code %d", resp.Message, res.StatusCode)
